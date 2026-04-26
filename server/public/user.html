@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KoNNecT — User Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Reset & Base ─────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-2: #242836;
+      --border: #2e3347;
+      --text: #e4e6f0;
+      --text-muted: #8b8fa3;
+      --accent: #6c5ce7;
+      --accent-glow: rgba(108, 92, 231, 0.25);
+      --success: #00b894;
+      --warning: #fdcb6e;
+      --info: #74b9ff;
+      --danger: #e17055;
+      --radius: 12px;
+      --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ─── Layout ───────────────────────────────── */
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* ─── Header ───────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    .header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), #a29bfe);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .connection-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 50px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+    .connection-badge .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--danger);
+      transition: var(--transition);
+    }
+    .connection-badge.connected .dot {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    /* ─── Cards ─────────────────────────────────── */
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+    }
+
+    .job-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      transition: var(--transition);
+      animation: slideIn 0.4s ease-out;
+    }
+    .job-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-glow), 0 8px 24px rgba(0,0,0,0.3);
+      transform: translateY(-2px);
+    }
+    .job-card .job-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .job-card .service-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .job-card .description {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+    .job-card .job-meta {
+      display: flex;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .job-card .job-meta span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .job-card .worker-info {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--info);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ─── Status Badge ──────────────────────────── */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 50px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: var(--transition);
+    }
+    .status-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-pending   { background: rgba(253,203,110,0.12); color: var(--warning); }
+    .status-pending::before   { background: var(--warning); }
+    .status-assigned  { background: rgba(116,185,255,0.12); color: var(--info); }
+    .status-assigned::before  { background: var(--info); }
+    .status-on_the_way { background: rgba(108,92,231,0.12); color: var(--accent); }
+    .status-on_the_way::before { background: var(--accent); }
+    .status-arrived   { background: rgba(0,184,148,0.12); color: var(--success); }
+    .status-arrived::before   { background: var(--success); }
+    .status-verified  { background: rgba(162,155,254,0.12); color: #a29bfe; }
+    .status-verified::before  { background: #a29bfe; }
+    .status-completed { background: rgba(0,184,148,0.2); color: #55efc4; }
+    .status-completed::before { background: #55efc4; box-shadow: 0 0 6px #55efc4; }
+
+    /* ─── Actions Bar ──────────────────────────── */
+    .actions-bar {
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: scale(0.97); }
+    .btn-verify {
+      background: linear-gradient(135deg, #a29bfe, var(--accent));
+      color: #fff;
+    }
+    .btn-verify:hover { box-shadow: 0 4px 16px var(--accent-glow); }
+
+    /* ─── Create Form ──────────────────────────── */
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .form-card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    .form-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .form-row input, .form-row textarea {
+      flex: 1;
+      padding: 10px 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: var(--transition);
+    }
+    .form-row input:focus, .form-row textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .form-row textarea { resize: vertical; min-height: 60px; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #a29bfe);
+      color: #fff;
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 4px 20px var(--accent-glow);
+      transform: translateY(-1px);
+    }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ─── Toast / Notification ──────────────────── */
+    .toast-container {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .toast {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 12px 18px;
+      min-width: 280px;
+      max-width: 380px;
+      font-size: 0.85rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      animation: toastIn 0.4s ease-out;
+    }
+    .toast-title {
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .toast-body { color: var(--text-muted); }
+    .toast.toast-success { border-left-color: var(--success); }
+    .toast.toast-warning { border-left-color: var(--warning); }
+
+    /* ─── Empty State ──────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+    }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .empty-state p { font-size: 0.95rem; }
+
+    /* ─── Status Timeline ──────────────────────── */
+    .status-timeline {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-top: 1rem;
+      padding: 0.5rem 0;
+    }
+    .timeline-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      position: relative;
+    }
+    .timeline-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--border);
+      border: 2px solid var(--border);
+      transition: var(--transition);
+      z-index: 1;
+    }
+    .timeline-step.active .timeline-dot {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+    .timeline-step.done .timeline-dot {
+      background: var(--success);
+      border-color: var(--success);
+    }
+    .timeline-label {
+      margin-top: 6px;
+      font-size: 0.65rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .timeline-step.active .timeline-label { color: var(--accent); }
+    .timeline-step.done .timeline-label { color: var(--success); }
+    .timeline-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      margin: 0 -2px;
+      margin-bottom: 20px;
+      transition: var(--transition);
+    }
+    .timeline-line.done { background: var(--success); }
+
+    /* ─── Animations ───────────────────────────── */
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(40px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+
+    /* ─── Responsive ───────────────────────────── */
+    @media (max-width: 600px) {
+      .form-row { flex-direction: column; }
+      .header h1 { font-size: 1.3rem; }
+      .job-card .job-meta { flex-direction: column; gap: 0.5rem; }
+      .status-timeline { flex-wrap: wrap; gap: 4px; }
+      .timeline-line { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- Header -->
+    <div class="header">
+      <h1>⚡ KoNNecT</h1>
+      <div class="connection-badge" id="connectionBadge">
+        <span class="dot"></span>
+        <span id="connectionLabel">Disconnected</span>
+      </div>
+    </div>
+
+    <!-- Create Job Form -->
+    <div class="form-card">
+      <h2>📋 Post a New Job</h2>
+      <div class="form-row">
+        <input type="text" id="inputUserId" placeholder="Your User ID" value="user_001" />
+        <input type="text" id="inputService" placeholder="Service type (e.g. Plumbing)" />
+      </div>
+      <div class="form-row">
+        <textarea id="inputDesc" placeholder="Describe what you need…"></textarea>
+      </div>
+      <button class="btn-primary" id="btnCreateJob">Create Job</button>
+    </div>
+
+    <!-- Active Jobs -->
+    <div class="section-title">Your Active Jobs</div>
+    <div id="jobsList">
+      <div class="empty-state">
+        <div class="icon">📭</div>
+        <p>No jobs yet. Create one above!</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Socket.io Client (served by the server) -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/socketClient.js"></script>
+
+  <script>
+    // ─────────────────────────────────────────
+    //  State
+    // ─────────────────────────────────────────
+    const API = window.location.origin;
+    const jobs = new Map(); // jobId → job object
+    let currentUserId = "user_001";
+
+    const STATUS_ORDER = ["pending", "assigned", "on_the_way", "arrived", "verified", "completed"];
+    const STATUS_LABELS = {
+      pending: "Pending",
+      assigned: "Assigned",
+      on_the_way: "On the way",
+      arrived: "Arrived",
+      verified: "Verified",
+      completed: "Completed",
+    };
+
+    // ─────────────────────────────────────────
+    //  Socket Connection
+    // ─────────────────────────────────────────
+    const client = new KonnectSocket(API);
+
+    client
+      .connect()
+      .registerAsUser(currentUserId);
+
+    // Connection status UI
+    client.on("connection", () => {
+      document.getElementById("connectionBadge").classList.add("connected");
+      document.getElementById("connectionLabel").textContent = "Connected";
+    });
+    client.on("disconnection", () => {
+      document.getElementById("connectionBadge").classList.remove("connected");
+      document.getElementById("connectionLabel").textContent = "Disconnected";
+    });
+
+    // ─────────────────────────────────────────
+    //  Listen: job_updated (real-time from server)
+    // ─────────────────────────────────────────
+    client.onJobUpdated((job) => {
+      const oldJob = jobs.get(job._id);
+      jobs.set(job._id, job);
+      renderJobs();
+
+      // Show toast with status change
+      if (oldJob && oldJob.status !== job.status) {
+        showToast(
+          `Job ${job.service}`,
+          `Status: ${STATUS_LABELS[oldJob.status]} → ${STATUS_LABELS[job.status]}`,
+          job.status === "completed" ? "toast-success" : "toast-warning"
+        );
+      } else if (!oldJob) {
+        showToast("Job Updated", `${job.service} — ${STATUS_LABELS[job.status]}`);
+      }
+
+      // Handle verification
+      if (job.status === "arrived") {
+        showToast("🔔 Worker Arrived", "Please verify the worker to proceed.", "toast-warning");
+      }
+
+      // Handle completion
+      if (job.status === "completed") {
+        showToast("✅ Job Completed!", `${job.service} has been completed.`, "toast-success");
+      }
+    });
+
+    // ─────────────────────────────────────────
+    //  Create Job (REST)
+    // ─────────────────────────────────────────
+    document.getElementById("btnCreateJob").addEventListener("click", async () => {
+      const userId = document.getElementById("inputUserId").value.trim();
+      const service = document.getElementById("inputService").value.trim();
+      const description = document.getElementById("inputDesc").value.trim();
+
+      if (!userId || !service || !description) {
+        showToast("Validation", "All fields are required.", "toast-warning");
+        return;
+      }
+
+      // Update user registration if changed
+      if (userId !== currentUserId) {
+        currentUserId = userId;
+        client.registerAsUser(currentUserId);
+      }
+
+      try {
+        const res = await fetch(`${API}/api/jobs`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, service, description }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          jobs.set(data.data._id, data.data);
+          renderJobs();
+          document.getElementById("inputService").value = "";
+          document.getElementById("inputDesc").value = "";
+          showToast("Job Created", `${service} posted successfully!`, "toast-success");
+        } else {
+          showToast("Error", data.message, "toast-warning");
+        }
+      } catch (err) {
+        showToast("Network Error", err.message, "toast-warning");
+      }
+    });
+
+    // ─────────────────────────────────────────
+    //  Verify Worker (user action)
+    // ─────────────────────────────────────────
+    async function verifyWorker(jobId) {
+      try {
+        const res = await fetch(`${API}/api/jobs/${jobId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "verified" }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          jobs.set(data.data._id, data.data);
+          renderJobs();
+        }
+      } catch (err) {
+        showToast("Error", err.message, "toast-warning");
+      }
+    }
+
+    // ─────────────────────────────────────────
+    //  Load existing jobs on page load
+    // ─────────────────────────────────────────
+    async function loadJobs() {
+      try {
+        const res = await fetch(`${API}/api/jobs?userId=${currentUserId}`);
+        const data = await res.json();
+        if (data.success) {
+          data.data.forEach((j) => jobs.set(j._id, j));
+          renderJobs();
+        }
+      } catch (_) { /* server might not be ready */ }
+    }
+    loadJobs();
+
+    // ─────────────────────────────────────────
+    //  Render
+    // ─────────────────────────────────────────
+    function renderJobs() {
+      const container = document.getElementById("jobsList");
+      const sorted = Array.from(jobs.values()).sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+
+      if (sorted.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">📭</div>
+            <p>No jobs yet. Create one above!</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = sorted.map((job) => {
+        const statusIdx = STATUS_ORDER.indexOf(job.status);
+
+        // Build timeline
+        const timeline = STATUS_ORDER.map((s, i) => {
+          let cls = "";
+          if (i < statusIdx) cls = "done";
+          else if (i === statusIdx) cls = "active";
+          return `<div class="timeline-step ${cls}">
+            <div class="timeline-dot"></div>
+            <div class="timeline-label">${STATUS_LABELS[s]}</div>
+          </div>`;
+        }).join(`<div class="timeline-line ${statusIdx > 0 ? '' : ''}"></div>`);
+
+        // Worker info
+        const workerHtml = job.workerName
+          ? `<div class="worker-info">🔧 Worker: <strong>${job.workerName}</strong></div>`
+          : "";
+
+        // Verify button (only shown when status is "arrived")
+        const actionsHtml = job.status === "arrived"
+          ? `<div class="actions-bar">
+               <button class="btn btn-verify" onclick="verifyWorker('${job._id}')">
+                 ✓ Verify Worker
+               </button>
+             </div>`
+          : "";
+
+        // Time
+        const time = new Date(job.createdAt).toLocaleString();
+
+        return `
+          <div class="job-card" id="job-${job._id}">
+            <div class="job-header">
+              <span class="service-name">${job.service}</span>
+              <span class="status-badge status-${job.status}">${STATUS_LABELS[job.status]}</span>
+            </div>
+            <div class="description">${job.description}</div>
+            <div class="status-timeline">${timeline}</div>
+            <div class="job-meta">
+              <span>🕐 ${time}</span>
+              <span>🆔 ${job._id.slice(-6)}</span>
+            </div>
+            ${workerHtml}
+            ${actionsHtml}
+          </div>`;
+      }).join("");
+
+      // Fix timeline lines
+      document.querySelectorAll(".status-timeline").forEach((tl) => {
+        const steps = tl.querySelectorAll(".timeline-step");
+        const lines = tl.querySelectorAll(".timeline-line");
+        steps.forEach((step, i) => {
+          if (step.classList.contains("done") && lines[i]) {
+            lines[i].classList.add("done");
+          }
+        });
+      });
+    }
+
+    // ─────────────────────────────────────────
+    //  Toast Notification
+    // ─────────────────────────────────────────
+    function showToast(title, body, cls = "") {
+      const container = document.getElementById("toastContainer");
+      const el = document.createElement("div");
+      el.className = `toast ${cls}`;
+      el.innerHTML = `<div class="toast-title">${title}</div><div class="toast-body">${body}</div>`;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = "0";
+        el.style.transform = "translateX(40px)";
+        el.style.transition = "0.3s ease-in";
+        setTimeout(() => el.remove(), 300);
+      }, 4000);
+    }
+  </script>
+</body>
+</html>

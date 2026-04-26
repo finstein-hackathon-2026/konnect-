@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KoNNecT — Worker Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0b0e14;
+      --surface: #151921;
+      --surface-2: #1e2330;
+      --border: #2a3040;
+      --text: #e4e6f0;
+      --text-muted: #7c8299;
+      --accent: #00b894;
+      --accent-glow: rgba(0,184,148,0.25);
+      --info: #74b9ff;
+      --warning: #fdcb6e;
+      --danger: #e17055;
+      --purple: #a29bfe;
+      --radius: 12px;
+      --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .app { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    .header h1 {
+      font-size: 1.75rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), #55efc4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .connection-badge {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 50px;
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: 0.8rem; font-weight: 500;
+    }
+    .connection-badge .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--danger); transition: var(--transition);
+    }
+    .connection-badge.connected .dot {
+      background: var(--accent); box-shadow: 0 0 8px var(--accent);
+    }
+
+    /* Worker ID bar */
+    .id-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .id-bar label { font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
+    .id-bar input {
+      flex: 1;
+      padding: 8px 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: var(--transition);
+    }
+    .id-bar input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+    .section-title {
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 1rem;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex; gap: 0; margin-bottom: 1.5rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .tab {
+      padding: 10px 20px;
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: var(--transition);
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* Job Cards */
+    .job-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      transition: var(--transition);
+      animation: slideIn 0.4s ease-out;
+    }
+    .job-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-glow), 0 8px 24px rgba(0,0,0,0.3);
+      transform: translateY(-2px);
+    }
+    .job-card .job-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .job-card .service-name { font-size: 1.1rem; font-weight: 600; }
+    .job-card .description { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem; }
+    .job-card .job-meta {
+      display: flex; gap: 1rem; font-size: 0.82rem; color: var(--text-muted);
+    }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 50px;
+      font-size: 0.75rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .status-badge::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+    }
+    .status-pending   { background: rgba(253,203,110,0.12); color: var(--warning); }
+    .status-pending::before   { background: var(--warning); }
+    .status-assigned  { background: rgba(116,185,255,0.12); color: var(--info); }
+    .status-assigned::before  { background: var(--info); }
+    .status-on_the_way { background: rgba(0,184,148,0.12); color: var(--accent); }
+    .status-on_the_way::before { background: var(--accent); }
+    .status-arrived   { background: rgba(162,155,254,0.12); color: var(--purple); }
+    .status-arrived::before   { background: var(--purple); }
+    .status-verified  { background: rgba(162,155,254,0.2); color: var(--purple); }
+    .status-verified::before  { background: var(--purple); box-shadow: 0 0 6px var(--purple); }
+    .status-completed { background: rgba(0,184,148,0.2); color: #55efc4; }
+    .status-completed::before { background: #55efc4; }
+
+    .actions-bar {
+      margin-top: 0.75rem; padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 0.5rem; flex-wrap: wrap;
+    }
+    .btn {
+      padding: 8px 16px; border: none; border-radius: 8px;
+      font-size: 0.82rem; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: var(--transition);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: scale(0.97); }
+    .btn-accept { background: linear-gradient(135deg, var(--accent), #55efc4); color: #0b0e14; }
+    .btn-accept:hover { box-shadow: 0 4px 16px var(--accent-glow); }
+    .btn-status { background: var(--surface-2); border: 1px solid var(--border); color: var(--text); }
+    .btn-status:hover { border-color: var(--accent); color: var(--accent); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+
+    .toast-container {
+      position: fixed; top: 1.5rem; right: 1.5rem; z-index: 9999;
+      display: flex; flex-direction: column; gap: 0.75rem;
+    }
+    .toast {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px; padding: 12px 18px;
+      min-width: 280px; max-width: 380px; font-size: 0.85rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      animation: toastIn 0.4s ease-out;
+    }
+    .toast-title { font-weight: 600; margin-bottom: 2px; }
+    .toast-body { color: var(--text-muted); }
+    .toast.toast-success { border-left-color: #55efc4; }
+    .toast.toast-warning { border-left-color: var(--warning); }
+    .toast.toast-new { border-left-color: var(--info); }
+
+    .badge-count {
+      background: var(--accent); color: #000;
+      font-size: 0.7rem; font-weight: 700;
+      padding: 2px 7px; border-radius: 50px;
+      margin-left: 6px;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(40px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @media (max-width: 600px) {
+      .id-bar { flex-direction: column; }
+      .job-card .job-meta { flex-direction: column; gap: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- Header -->
+    <div class="header">
+      <h1>🔧 KoNNecT Worker</h1>
+      <div class="connection-badge" id="connectionBadge">
+        <span class="dot"></span>
+        <span id="connectionLabel">Disconnected</span>
+      </div>
+    </div>
+
+    <!-- Worker ID -->
+    <div class="id-bar">
+      <label>Worker ID:</label>
+      <input type="text" id="inputWorkerId" value="worker_001" />
+      <label style="margin-left:0.5rem">Name:</label>
+      <input type="text" id="inputWorkerName" value="Ravi Kumar" />
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="available" onclick="switchTab('available')">
+        Available Jobs <span class="badge-count" id="availableCount">0</span>
+      </div>
+      <div class="tab" data-tab="my" onclick="switchTab('my')">
+        My Jobs <span class="badge-count" id="myCount">0</span>
+      </div>
+    </div>
+
+    <!-- Job Lists -->
+    <div id="availableList"></div>
+    <div id="myList" style="display:none"></div>
+
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/socketClient.js"></script>
+
+  <script>
+    const API = window.location.origin;
+    const availableJobs = new Map();
+    const myJobs = new Map();
+    let activeTab = "available";
+
+    const STATUS_LABELS = {
+      pending: "Pending", assigned: "Assigned", on_the_way: "On the way",
+      arrived: "Arrived", verified: "Verified", completed: "Completed",
+    };
+    const NEXT_STATUS = {
+      assigned: "on_the_way",
+      on_the_way: "arrived",
+      // arrived → verified (user verifies)
+      verified: "completed",
+    };
+    const NEXT_LABEL = {
+      assigned: "🚗 Start — On the way",
+      on_the_way: "📍 Mark Arrived",
+      verified: "✅ Complete Job",
+    };
+
+    function getWorkerId() { return document.getElementById("inputWorkerId").value.trim(); }
+    function getWorkerName() { return document.getElementById("inputWorkerName").value.trim(); }
+
+    // ─── Socket ──────────────────────────────
+    const client = new KonnectSocket(API);
+    client.connect().registerAsWorker(getWorkerId());
+
+    // Re-register when inputs change
+    document.getElementById("inputWorkerId").addEventListener("change", () => {
+      client.registerAsWorker(getWorkerId());
+    });
+
+    client.on("connection", () => {
+      document.getElementById("connectionBadge").classList.add("connected");
+      document.getElementById("connectionLabel").textContent = "Connected";
+    });
+    client.on("disconnection", () => {
+      document.getElementById("connectionBadge").classList.remove("connected");
+      document.getElementById("connectionLabel").textContent = "Disconnected";
+    });
+
+    // ─── Listen: new_job ────────────────────
+    client.onNewJob((job) => {
+      availableJobs.set(job._id, job);
+      renderAvailable();
+      showToast("🆕 New Job!", `${job.service} — ${job.description.substring(0, 60)}`, "toast-new");
+    });
+
+    // ─── Listen: job_updated ────────────────
+    client.onJobUpdated((job) => {
+      if (job.workerId === getWorkerId()) {
+        myJobs.set(job._id, job);
+        availableJobs.delete(job._id);
+      }
+      renderAvailable();
+      renderMy();
+      showToast(`Job ${job.service}`, `Status → ${STATUS_LABELS[job.status]}`);
+    });
+
+    // ─── Listen: job_accepted ───────────────
+    client.onJobAccepted((job) => {
+      availableJobs.delete(job._id);
+      myJobs.set(job._id, job);
+      renderAvailable();
+      renderMy();
+      showToast("✅ Job Accepted", `${job.service} is now yours!`, "toast-success");
+    });
+
+    // ─── Accept Job (via socket) ────────────
+    function acceptJob(jobId) {
+      const workerId = getWorkerId();
+      const workerName = getWorkerName();
+      if (!workerId || !workerName) {
+        showToast("Error", "Set your Worker ID and Name first", "toast-warning");
+        return;
+      }
+      client.acceptJob(jobId, workerId, workerName);
+    }
+
+    // ─── Update Status (via REST) ───────────
+    async function advanceStatus(jobId) {
+      const job = myJobs.get(jobId);
+      if (!job) return;
+      const next = NEXT_STATUS[job.status];
+      if (!next) return;
+
+      try {
+        const res = await fetch(`${API}/api/worker/jobs/${jobId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: next }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          myJobs.set(data.data._id, data.data);
+          renderMy();
+        } else {
+          showToast("Error", data.message, "toast-warning");
+        }
+      } catch (err) {
+        showToast("Network Error", err.message, "toast-warning");
+      }
+    }
+
+    // ─── Load Jobs ──────────────────────────
+    async function loadAvailable() {
+      try {
+        const res = await fetch(`${API}/api/worker/jobs/available`);
+        const data = await res.json();
+        if (data.success) {
+          data.data.forEach((j) => availableJobs.set(j._id, j));
+          renderAvailable();
+        }
+      } catch (_) {}
+    }
+    async function loadMyJobs() {
+      try {
+        const res = await fetch(`${API}/api/worker/jobs/my?workerId=${getWorkerId()}`);
+        const data = await res.json();
+        if (data.success) {
+          data.data.forEach((j) => myJobs.set(j._id, j));
+          renderMy();
+        }
+      } catch (_) {}
+    }
+    loadAvailable();
+    loadMyJobs();
+
+    // ─── Tabs ───────────────────────────────
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll(".tab").forEach((t) =>
+        t.classList.toggle("active", t.dataset.tab === tab)
+      );
+      document.getElementById("availableList").style.display = tab === "available" ? "block" : "none";
+      document.getElementById("myList").style.display = tab === "my" ? "block" : "none";
+    }
+
+    // ─── Render Available ───────────────────
+    function renderAvailable() {
+      const container = document.getElementById("availableList");
+      const list = Array.from(availableJobs.values()).sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      document.getElementById("availableCount").textContent = list.length;
+
+      if (list.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>No available jobs right now</p></div>`;
+        return;
+      }
+
+      container.innerHTML = list.map((job) => `
+        <div class="job-card">
+          <div class="job-header">
+            <span class="service-name">${job.service}</span>
+            <span class="status-badge status-pending">Pending</span>
+          </div>
+          <div class="description">${job.description}</div>
+          <div class="job-meta">
+            <span>🕐 ${new Date(job.createdAt).toLocaleString()}</span>
+            <span>👤 ${job.userId}</span>
+          </div>
+          <div class="actions-bar">
+            <button class="btn btn-accept" onclick="acceptJob('${job._id}')">
+              ✓ Accept Job
+            </button>
+          </div>
+        </div>`).join("");
+    }
+
+    // ─── Render My Jobs ─────────────────────
+    function renderMy() {
+      const container = document.getElementById("myList");
+      const list = Array.from(myJobs.values()).sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      document.getElementById("myCount").textContent = list.length;
+
+      if (list.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">🔧</div><p>No accepted jobs yet</p></div>`;
+        return;
+      }
+
+      container.innerHTML = list.map((job) => {
+        const nextStatus = NEXT_STATUS[job.status];
+        const nextLabel = NEXT_LABEL[job.status];
+        const waitingVerification = job.status === "arrived";
+
+        let actionHtml = "";
+        if (waitingVerification) {
+          actionHtml = `<div class="actions-bar">
+            <button class="btn btn-status" disabled>⏳ Waiting for user verification…</button>
+          </div>`;
+        } else if (nextStatus && nextLabel) {
+          actionHtml = `<div class="actions-bar">
+            <button class="btn btn-status" onclick="advanceStatus('${job._id}')">${nextLabel}</button>
+          </div>`;
+        } else if (job.status === "completed") {
+          actionHtml = `<div class="actions-bar">
+            <span style="color:#55efc4;font-size:0.85rem;font-weight:600">✅ Completed</span>
+          </div>`;
+        }
+
+        return `
+          <div class="job-card">
+            <div class="job-header">
+              <span class="service-name">${job.service}</span>
+              <span class="status-badge status-${job.status}">${STATUS_LABELS[job.status]}</span>
+            </div>
+            <div class="description">${job.description}</div>
+            <div class="job-meta">
+              <span>🕐 ${new Date(job.createdAt).toLocaleString()}</span>
+              <span>👤 User: ${job.userId}</span>
+            </div>
+            ${actionHtml}
+          </div>`;
+      }).join("");
+    }
+
+    // ─── Toast ──────────────────────────────
+    function showToast(title, body, cls = "") {
+      const container = document.getElementById("toastContainer");
+      const el = document.createElement("div");
+      el.className = `toast ${cls}`;
+      el.innerHTML = `<div class="toast-title">${title}</div><div class="toast-body">${body}</div>`;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = "0";
+        el.style.transform = "translateX(40px)";
+        el.style.transition = "0.3s ease-in";
+        setTimeout(() => el.remove(), 300);
+      }, 4000);
+    }
+  </script>
+</body>
+</html>
